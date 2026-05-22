@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#e8445a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mot Mystère">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>Le Mot Mystère</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fef9f0; --card: #ffffff; --primary: #e8445a;
+    --primary-dark: #c4293d; --accent: #ffd166; --accent2: #06d6a0;
+    --accent3: #118ab2; --text: #2d2d2d; --text-light: #7a7a8c;
+    --border: #e8d5b0; --shadow: 0 4px 20px rgba(232,68,90,0.15); --radius: 16px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family:'Nunito',sans-serif; background:var(--bg); color:var(--text); min-height:100vh;
+    background-image:radial-gradient(circle at 10% 20%,rgba(255,209,102,.2) 0%,transparent 40%),
+      radial-gradient(circle at 90% 80%,rgba(6,214,160,.15) 0%,transparent 40%);
+  }
+  .screen { display:none; min-height:100vh; padding:20px; }
+  .screen.active { display:flex; flex-direction:column; align-items:center; justify-content:center; }
+
+  /* WELCOME */
+  #welcome { gap:28px; text-align:center; }
+  .logo { font-family:'Fredoka One',cursive; font-size:clamp(2.2rem,8vw,3.5rem); color:var(--primary);
+    letter-spacing:2px; animation:float 3s ease-in-out infinite; }
+  .logo span { color:var(--accent3); }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+  .subtitle { font-size:1rem; color:var(--text-light); font-weight:600; }
+  .welcome-card { background:var(--card); border-radius:var(--radius); padding:28px;
+    box-shadow:var(--shadow); width:100%; max-width:440px; border:2px solid var(--border); }
+  .section-title { font-family:'Fredoka One',cursive; font-size:1.2rem; color:var(--primary); margin-bottom:16px; }
+  .player-count { display:flex; gap:12px; margin-bottom:20px; justify-content:center; }
+  .count-btn { width:60px; height:60px; border-radius:50%; border:3px solid var(--border);
+    background:var(--bg); font-family:'Fredoka One',cursive; font-size:1.6rem; cursor:pointer;
+    color:var(--text-light); transition:all .2s; }
+  .count-btn.active { background:var(--primary); border-color:var(--primary); color:white;
+    transform:scale(1.1); box-shadow:0 4px 12px rgba(232,68,90,.4); }
+  .count-btn:hover:not(.active) { border-color:var(--primary); color:var(--primary); }
+  .player-inputs { display:flex; flex-direction:column; gap:10px; margin-bottom:20px; }
+  .player-input-wrap { display:flex; align-items:center; gap:10px; animation:slideIn .3s ease; }
+  @keyframes slideIn { from{opacity:0;transform:translateX(-20px)} to{opacity:1;transform:translateX(0)} }
+  .player-icon { width:34px; height:34px; border-radius:50%; display:flex; align-items:center;
+    justify-content:center; font-size:1rem; flex-shrink:0; }
+  .p1{background:#ffecef} .p2{background:#e8f4fd} .p3{background:#e8fdf4}
+  .input-field { width:100%; padding:11px 14px; border:2px solid var(--border); border-radius:12px;
+    font-family:'Nunito',sans-serif; font-size:1rem; font-weight:700; background:var(--bg);
+    color:var(--text); transition:all .2s; outline:none; }
+  .input-field:focus { border-color:var(--primary); background:white; box-shadow:0 0 0 3px rgba(232,68,90,.1); }
+  .rounds-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;
+    padding:12px 16px; background:var(--bg); border-radius:12px; border:2px solid var(--border); }
+  .rounds-label { font-weight:700; color:var(--text-light); font-size:.9rem; }
+  .rounds-ctrl { display:flex; align-items:center; gap:12px; }
+  .rounds-btn { width:30px; height:30px; border-radius:50%; border:2px solid var(--primary);
+    background:white; color:var(--primary); font-size:1.1rem; font-weight:800; cursor:pointer; transition:all .2s; }
+  .rounds-btn:hover { background:var(--primary); color:white; }
+  .rounds-val { font-family:'Fredoka One',cursive; font-size:1.4rem; color:var(--primary); min-width:22px; text-align:center; }
+  .btn-primary { width:100%; padding:15px; background:var(--primary); color:white; border:none;
+    border-radius:14px; font-family:'Fredoka One',cursive; font-size:1.2rem; cursor:pointer;
+    letter-spacing:1px; transition:all .2s; box-shadow:0 4px 0 var(--primary-dark); }
+  .btn-primary:hover { transform:translateY(-2px); box-shadow:0 6px 0 var(--primary-dark); }
+  .btn-primary:active { transform:translateY(2px); box-shadow:0 2px 0 var(--primary-dark); }
+
+  /* GAME */
+  #game { padding:12px; gap:10px; justify-content:flex-start; max-width:600px; margin:0 auto; width:100%; }
+  .scores-bar { display:flex; gap:8px; width:100%; justify-content:center; }
+  .score-card { flex:1; background:var(--card); border-radius:12px; padding:8px 10px; text-align:center;
+    border:2px solid var(--border); transition:all .3s; position:relative; overflow:hidden; }
+  .score-card.active-player { border-color:var(--primary); box-shadow:0 0 0 3px rgba(232,68,90,.15); transform:scale(1.03); }
+  .score-card.active-player::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:var(--primary); }
+  .score-name { font-size:.7rem; font-weight:800; color:var(--text-light); text-transform:uppercase;
+    letter-spacing:.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .score-val { font-family:'Fredoka One',cursive; font-size:1.5rem; color:var(--primary); line-height:1.1; }
+  .active-badge { font-size:.6rem; background:var(--primary); color:white; padding:1px 6px; border-radius:10px; font-weight:800; }
+  .turn-info { font-size:.85rem; color:var(--text-light); font-weight:700; text-align:center; }
+  .turn-info span { color:var(--primary); }
+  .def-box { background:var(--card); border-radius:var(--radius); padding:16px 18px; width:100%;
+    border:2px solid var(--border); box-shadow:var(--shadow); }
+  .def-label { font-size:.7rem; font-weight:800; text-transform:uppercase; letter-spacing:1px;
+    color:var(--text-light); margin-bottom:5px; }
+  .def-text { font-size:.95rem; font-weight:700; color:var(--text); line-height:1.5; }
+  .word-display { display:flex; gap:7px; flex-wrap:wrap; justify-content:center; width:100%; }
+  .letter-box { width:42px; height:50px; border-radius:10px; border:3px solid var(--border);
+    background:var(--card); display:flex; align-items:center; justify-content:center;
+    font-family:'Fredoka One',cursive; font-size:1.4rem; color:var(--text); transition:all .3s; }
+  .letter-box.revealed { border-color:var(--accent2); background:#e8fdf4; color:var(--accent2); animation:pop .4s cubic-bezier(.36,.07,.19,.97); }
+  .letter-box.hint-revealed { border-color:var(--accent); background:#fff8e6; color:#d4a017; animation:pop .4s cubic-bezier(.36,.07,.19,.97); }
+  .letter-box.wrong-reveal { border-color:var(--primary); background:#ffecef; color:var(--primary); }
+  @keyframes pop { 0%{transform:scale(.8)} 50%{transform:scale(1.2)} 100%{transform:scale(1)} }
+  .keyboard { width:100%; display:flex; flex-direction:column; gap:5px; }
+  .kb-row { display:flex; gap:4px; justify-content:center; }
+  .kb-key { min-width:32px; height:40px; border-radius:8px; border:2px solid var(--border);
+    background:var(--card); font-family:'Fredoka One',cursive; font-size:.95rem; cursor:pointer;
+    color:var(--text); transition:all .15s; flex:1; max-width:42px; padding:0 2px;
+    box-shadow:0 2px 0 var(--border); }
+  .kb-key:hover:not(:disabled) { background:var(--primary); color:white; border-color:var(--primary);
+    transform:translateY(-2px); box-shadow:0 4px 0 var(--primary-dark); }
+  .kb-key.correct { background:var(--accent2); border-color:var(--accent2); color:white; cursor:default; box-shadow:0 2px 0 #04a47a; }
+  .kb-key.wrong { background:#e0e0e0; border-color:#ccc; color:#aaa; cursor:default; box-shadow:none; text-decoration:line-through; }
+  .kb-key:disabled { cursor:default; }
+  .game-actions { display:flex; gap:10px; width:100%; }
+  .btn-aide { flex:1; padding:11px; background:var(--accent); color:#6b4d00; border:none;
+    border-radius:12px; font-family:'Fredoka One',cursive; font-size:.95rem; cursor:pointer;
+    transition:all .2s; box-shadow:0 3px 0 #d4a017; }
+  .btn-aide:hover { transform:translateY(-2px); box-shadow:0 5px 0 #d4a017; }
+  .btn-aide:disabled { opacity:.5; cursor:default; transform:none; }
+  .mistakes-display { flex:1; padding:11px; background:var(--card); border:2px solid var(--border);
+    border-radius:12px; text-align:center; font-weight:700; font-size:.8rem; color:var(--text-light);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; }
+  .mistakes-val { font-family:'Fredoka One',cursive; font-size:1.3rem; color:var(--primary); }
+
+  /* RESULT OVERLAY */
+  .overlay { position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; align-items:center;
+    justify-content:center; z-index:100; padding:16px; overflow-y:auto; }
+  .overlay.show { display:flex; }
+  .result-card { background:var(--card); border-radius:20px; padding:20px 20px; max-width:380px;
+    width:100%; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.3);
+    animation:slideUp .4s cubic-bezier(.34,1.56,.64,1); max-height:90vh; overflow-y:auto; }
+  @keyframes slideUp { from{opacity:0;transform:translateY(40px) scale(.9)} to{opacity:1;transform:translateY(0) scale(1)} }
+  .result-emoji { font-size:3rem; margin-bottom:6px; }
+  .result-title { font-family:'Fredoka One',cursive; font-size:1.6rem; color:var(--primary); margin-bottom:12px; }
+  .res-word-label { font-size:0.75rem; font-weight:800; text-transform:uppercase; letter-spacing:1px; color:var(--text-light); margin-bottom:6px; }
+  .res-word-display { display:flex; gap:5px; flex-wrap:wrap; justify-content:center; margin:0 0 14px; min-height:52px; }
+  .res-letter-box { width:38px; height:48px; border-radius:8px; display:flex; align-items:center;
+    justify-content:center; font-family:'Fredoka One',cursive; font-size:1.4rem; border:3px solid; flex-shrink:0; }
+  .res-won { background:#e8fdf4; border-color:var(--accent2); color:var(--accent2); }
+  .res-lost { background:#ffecef; border-color:var(--primary); color:var(--primary); }
+  .result-points { font-size:1rem; font-weight:800; margin-bottom:18px; }
+  .points-pos { color:var(--accent2); }
+  .points-zero { color:var(--text-light); }
+  .btn-next { padding:13px 28px; background:var(--primary); color:white; border:none; border-radius:14px;
+    font-family:'Fredoka One',cursive; font-size:1.1rem; cursor:pointer;
+    box-shadow:0 4px 0 var(--primary-dark); transition:all .2s; width:100%; }
+  .btn-next:hover { transform:translateY(-2px); box-shadow:0 6px 0 var(--primary-dark); }
+
+  /* END */
+  #end { gap:24px; text-align:center; }
+  .end-title { font-family:'Fredoka One',cursive; font-size:2.2rem; color:var(--primary); animation:float 3s ease-in-out infinite; }
+  .podium { width:100%; max-width:440px; display:flex; flex-direction:column; gap:12px; }
+  .podium-item { background:var(--card); border-radius:14px; padding:14px 18px; display:flex;
+    align-items:center; gap:14px; box-shadow:var(--shadow); border:2px solid var(--border);
+    animation:slideIn .4s ease both; }
+  .podium-item:nth-child(1){animation-delay:.1s;border-color:var(--accent)}
+  .podium-item:nth-child(2){animation-delay:.2s;border-color:#ddd}
+  .podium-item:nth-child(3){animation-delay:.3s;border-color:#c4a45a}
+  .podium-rank { font-family:'Fredoka One',cursive; font-size:1.8rem; min-width:40px; text-align:center; }
+  .podium-name { font-weight:800; font-size:1rem; flex:1; text-align:left; }
+  .podium-score { font-family:'Fredoka One',cursive; font-size:1.6rem; color:var(--primary); }
+  .podium-pts { font-size:.7rem; color:var(--text-light); font-weight:700; }
+  .btn-replay { padding:14px 36px; background:var(--primary); color:white; border:none;
+    border-radius:14px; font-family:'Fredoka One',cursive; font-size:1.2rem; cursor:pointer;
+    box-shadow:0 4px 0 var(--primary-dark); transition:all .2s; }
+  .btn-replay:hover { transform:translateY(-2px); box-shadow:0 6px 0 var(--primary-dark); }
+
+  .toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(80px);
+    background:#2d2d2d; color:white; padding:11px 22px; border-radius:50px; font-weight:700;
+    font-size:.85rem; z-index:200; transition:transform .3s cubic-bezier(.34,1.56,.64,1); white-space:nowrap; }
+  .toast.show { transform:translateX(-50%) translateY(0); }
+
+  @media(max-width:400px) {
+    .kb-key{min-width:26px;height:36px;font-size:.8rem}
+    .letter-box{width:34px;height:42px;font-size:1.1rem}
+  }
+</style>
+</head>
+<body>
+
+<!-- WELCOME -->
+<div id="welcome" class="screen active">
+  <div class="logo">Le Mot<br><span>Mystère</span> 🔤</div>
+  <p class="subtitle">Devinez les mots à partir de leurs définitions !</p>
+  <div class="welcome-card">
+    <div class="section-title">👥 Nombre de joueurs</div>
+    <div class="player-count">
+      <button class="count-btn active" onclick="setPlayers(1)">1</button>
+      <button class="count-btn" onclick="setPlayers(2)">2</button>
+      <button class="count-btn" onclick="setPlayers(3)">3</button>
+    </div>
+    <div class="player-inputs" id="playerInputs">
+      <div class="player-input-wrap">
+        <div class="player-icon p1">🔴</div>
+        <input class="input-field" id="p1name" type="text" placeholder="Nom du joueur 1" maxlength="15">
+      </div>
+    </div>
+    <div class="rounds-row">
+      <span class="rounds-label">🎯 Mots par joueur</span>
+      <div class="rounds-ctrl">
+        <button class="rounds-btn" onclick="changeRounds(-1)">−</button>
+        <span class="rounds-val" id="roundsVal">5</span>
+        <button class="rounds-btn" onclick="changeRounds(1)">+</button>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="startGame()">🚀 Commencer la partie !</button>
+  </div>
+</div>
+
+<!-- GAME -->
+<div id="game" class="screen">
+  <div class="scores-bar" id="scoresBar"></div>
+  <div class="turn-info" id="turnInfo"></div>
+  <div class="def-box">
+    <div class="def-label">💡 Définition</div>
+    <div class="def-text" id="defText">—</div>
+  </div>
+  <div class="word-display" id="wordDisplay"></div>
+  <div class="keyboard" id="keyboard">
+    <div class="kb-row" id="row1"></div>
+    <div class="kb-row" id="row2"></div>
+    <div class="kb-row" id="row3"></div>
+  </div>
+  <div class="game-actions">
+    <button class="btn-aide" id="btnAide" onclick="useHint()">💡 Aide (−1 pt)</button>
+    <div class="mistakes-display">
+      <span class="mistakes-val" id="mistakesVal">0</span>
+      <span>erreurs</span>
+    </div>
+  </div>
+</div>
+
+<!-- END -->
+<div id="end" class="screen">
+  <div class="end-title">🏆 Résultats finaux !</div>
+  <div class="podium" id="podium"></div>
+  <button class="btn-replay" onclick="resetGame()">🔄 Rejouer</button>
+</div>
+
+<!-- RESULT OVERLAY — outside all screens, always in DOM -->
+<div class="overlay" id="overlay">
+  <div class="result-card">
+    <div class="result-emoji" id="resEmoji"></div>
+    <div class="result-title" id="resTitle"></div>
+    <div class="res-word-label">Le mot était :</div>
+    <div class="res-word-display" id="resWordDisplay"></div>
+    <div class="result-points" id="resPoints"></div>
+    <button class="btn-next" id="btnNext" onclick="nextTurn()">Suivant →</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const WORDS = [
+  {word:"CHAT",def:"Animal domestique félin qui ronronne et chasse les souris."},
+  {word:"NUAGE",def:"Amas de gouttelettes d'eau en suspension dans l'atmosphère."},
+  {word:"JARDIN",def:"Terrain où l'on cultive des fleurs, des légumes ou des arbres."},
+  {word:"VOYAGE",def:"Déplacement d'un endroit à un autre, souvent lointain."},
+  {word:"SOLEIL",def:"Étoile centrale de notre système planétaire qui nous donne chaleur et lumière."},
+  {word:"MAISON",def:"Bâtiment construit pour servir de résidence à des personnes."},
+  {word:"RIVIERE",def:"Cours d'eau naturel qui se jette dans un fleuve ou la mer."},
+  {word:"MONTAGNE",def:"Relief terrestre élevé avec des pentes abruptes et un sommet."},
+  {word:"ETOILE",def:"Corps céleste lumineux visible la nuit dans le ciel."},
+  {word:"FLEUR",def:"Organe reproducteur d'une plante, souvent coloré et parfumé."},
+  {word:"MUSIQUE",def:"Art d'organiser des sons dans le temps pour créer une œuvre."},
+  {word:"CUISINE",def:"Pièce d'une maison où l'on prépare les repas. Aussi un art culinaire."},
+  {word:"TABLEAU",def:"Œuvre peinte sur une surface plane, accrochée au mur."},
+  {word:"FENETRE",def:"Ouverture vitrée dans un mur pour laisser passer la lumière."},
+  {word:"BALCON",def:"Plate-forme en saillie sur la façade d'un immeuble."},
+  {word:"PAPIER",def:"Matière mince fabriquée à partir de fibres végétales pour écrire."},
+  {word:"CHAPEAU",def:"Coiffure avec bords, portée pour se protéger ou par style."},
+  {word:"CAROTTE",def:"Légume racine orange très riche en bêtacarotène."},
+  {word:"HIBOU",def:"Oiseau nocturne qui tourne la tête à 270° et hululte."},
+  {word:"GRENOUILLE",def:"Amphibien vert qui saute et coasse près des étangs."},
+  {word:"GUITARE",def:"Instrument de musique à cordes que l'on pince ou gratte."},
+  {word:"DESERT",def:"Région très aride avec peu de végétation et peu de pluie."},
+  {word:"PIRATE",def:"Aventurier des mers qui attaquait les navires marchands."},
+  {word:"DRAGON",def:"Créature mythique crachant du feu avec des ailes et des écailles."},
+  {word:"CHATEAU",def:"Grande demeure fortifiée du Moyen Âge avec des tours et douves."},
+  {word:"CERISE",def:"Petit fruit rouge à noyau qui pousse sur un cerisier."},
+  {word:"RENARD",def:"Mammifère roux à queue touffue connu pour sa ruse."},
+  {word:"BOUSSOLE",def:"Instrument d'orientation dont l'aiguille indique le nord magnétique."},
+  {word:"TONNERRE",def:"Bruit fort causé par la foudre lors d'un orage."},
+  {word:"BALEINE",def:"Le plus grand mammifère marin qui souffle de l'eau par son évent."},
+  {word:"PLUIE",def:"Précipitation d'eau sous forme de gouttes tombant du ciel."},
+  {word:"MIROIR",def:"Surface réfléchissante qui renvoie l'image des objets."},
+  {word:"BOUGIE",def:"Bâtonnet de cire avec une mèche qui brûle pour éclairer."},
+  {word:"REQUIN",def:"Grand poisson prédateur marin avec de nombreuses rangées de dents."},
+  {word:"MOUTON",def:"Animal domestique élevé pour sa laine et sa viande."},
+  {word:"CRANE",def:"Os qui protège et contient le cerveau."},
+  {word:"FUSEE",def:"Engin propulsé par réaction pour voyager dans l'espace."},
+  {word:"JUNGLE",def:"Forêt tropicale dense avec une végétation exubérante."},
+  {word:"CACTUS",def:"Plante grasse couverte d'épines qui pousse dans les déserts."},
+  {word:"VOLCAN",def:"Montagne d'où s'écoule de la lave lors des éruptions."},
+  {word:"PIEUVRE",def:"Mollusque marin avec huit tentacules et une intelligence remarquable."},
+  {word:"GIRAFE",def:"Mammifère africain à très long cou et taches brunes."},
+  {word:"ECHARPE",def:"Long tissu porté autour du cou pour se protéger du froid."},
+  {word:"ESCALIER",def:"Suite de marches permettant de monter ou descendre d'un étage."},
+  {word:"PENDULE",def:"Horloge murale avec un balancier qui oscille régulièrement."},
+  {word:"CAVERNE",def:"Grotte naturelle creusée dans la roche, souvent profonde."},
+  {word:"CORBEAU",def:"Grand oiseau noir à bec crochu, symbole de mauvais augure."},
+  {word:"TAMBOUR",def:"Instrument de percussion que l'on frappe avec des baguettes."},
+  {word:"RIVAGE",def:"Bande de terre au bord de la mer ou d'un lac."},
+  {word:"SAVANE",def:"Vaste prairie tropicale parsemée d'arbres, habitat des lions."},
+  {word:"TORNADE",def:"Violent tourbillon de vent en forme d'entonnoir très destructeur."},
+  {word:"LABYRINTHE",def:"Réseau compliqué de couloirs où l'on se perd facilement."},
+  {word:"COMETE",def:"Astre du système solaire avec une queue lumineuse de poussière et gaz."},
+  {word:"SORCIERE",def:"Personnage de conte pratiquant la magie et chevauchant un balai."},
+  {word:"MANCHOT",def:"Oiseau marin incapable de voler vivant dans l'Antarctique."},
+  {word:"SQUELETTE",def:"Ensemble des os qui constituent la charpente du corps."},
+  {word:"AURORE",def:"Lumière colorée du ciel à l'aube, ou phénomène lumineux aux pôles."},
+  {word:"TEMPETE",def:"Violente perturbation atmosphérique avec vent fort et pluie."},
+  {word:"FANTOME",def:"Esprit d'un mort qui hanterait les maisons, selon les croyances."},
+  {word:"LUCIOLE",def:"Insecte qui émet de la lumière dans l'obscurité."},
+  {word:"TRIDENT",def:"Fourche à trois pointes, attribut du dieu des mers Poséidon."},
+  {word:"MOUSTIQUE",def:"Petit insecte piqueur qui peut transmettre des maladies tropicales."},
+  {word:"CRISTAL",def:"Substance minérale transparente avec une structure régulière."},
+  {word:"PAPILLON",def:"Insecte aux grandes ailes colorées qui butine les fleurs."},
+  {word:"CLAVIER",def:"Ensemble de touches permettant de saisir du texte sur un ordinateur."},
+  {word:"PARACHUTE",def:"Dispositif qui ralentit la chute d'une personne depuis un avion."},
+  {word:"NOISETTE",def:"Petit fruit à coque dure très apprécié des écureuils."},
+  {word:"CYCLONE",def:"Tempête tropicale tournant sur elle-même avec des vents violents."},
+  {word:"LIBELLULE",def:"Insecte aux ailes transparentes qui vole près des plans d'eau."},
+  {word:"AIMANT",def:"Objet qui attire le métal grâce à ses propriétés magnétiques."},
+  {word:"SABLIER",def:"Instrument mesurant le temps par l'écoulement de sable d'un récipient à l'autre."},
+  {word:"PERROQUET",def:"Oiseau coloré tropical capable d'imiter la voix humaine."},
+  {word:"PHARE",def:"Tour lumineuse côtière guidant les navires en évitant les récifs."},
+  {word:"CARIBOU",def:"Grand cervidé du Grand Nord portant des bois imposants."},
+  {word:"ORIGAMI",def:"Art japonais du pliage de papier pour créer des formes."},
+  {word:"SCORPION",def:"Arachnide doté d'une queue venimeuse recourbée."},
+  {word:"CONFETTI",def:"Petits morceaux de papier coloré lancés lors des fêtes."},
+  {word:"SATELLITE",def:"Objet envoyé en orbite autour d'une planète, naturel ou artificiel."},
+  {word:"GALAXIE",def:"Immense ensemble d'étoiles, de gaz et de poussière dans l'univers."},
+  {word:"TSUNAMI",def:"Gigantesque vague causée par un séisme sous-marin."},
+  {word:"IGLOO",def:"Habitation construite en blocs de glace par les peuples arctiques."},
+  {word:"KARATE",def:"Art martial japonais utilisant coups de poing et de pied."},
+  {word:"LAGON",def:"Plan d'eau calme entouré par un récif ou une île corallienne."},
+  {word:"MANDARINE",def:"Petit agrume orange facile à peler, plus sucré que l'orange."},
+  {word:"OASIS",def:"Point d'eau en plein désert où pousse de la végétation."},
+  {word:"QUARTZ",def:"Minéral cristallin très commun, souvent blanc ou transparent."},
+  {word:"RADAR",def:"Système détectant des objets à distance par ondes radio réfléchies."},
+  {word:"TOUNDRA",def:"Vaste plaine froide sans arbres des régions arctiques."},
+  {word:"VORTEX",def:"Mouvement tourbillonnaire d'un fluide autour d'un axe central."},
+  {word:"ZEPPELIN",def:"Ancien dirigeable rigide gonflé à l'hydrogène ou à l'hélium."},
+  {word:"HIBISCUS",def:"Fleur tropicale aux grandes pétales colorées souvent rouge ou rose."},
+  {word:"BANQUISE",def:"Étendue de glace flottante recouvrant les océans polaires."},
+  {word:"CROCODILE",def:"Grand reptile à mâchoires puissantes vivant dans les eaux chaudes."},
+  {word:"DETECTIVE",def:"Enquêteur qui résout des mystères en cherchant des indices."},
+  {word:"ELEPHANT",def:"Le plus grand mammifère terrestre avec une longue trompe."},
+  {word:"ESCALADE",def:"Sport consistant à grimper des rochers ou des parois artificielles."},
+  {word:"FROMAGE",def:"Aliment fermenté fabriqué à partir de lait caillé."},
+  {word:"HARMONICA",def:"Petit instrument de musique à vent que l'on souffle en le glissant sur les lèvres."},
+  {word:"ICEBERG",def:"Bloc de glace géant flottant dans l'océan dont 90% est sous l'eau."},
+  {word:"JONGLEUR",def:"Artiste de cirque qui lance et rattrape plusieurs objets en l'air."},
+];
+
+// ===== STATE =====
+let G = {
+  numPlayers:1, names:[], scores:[], roundsPerPlayer:5,
+  currentPlayer:0, roundsPlayed:[],
+  word:'', def:'', guessed:new Set(), correct:new Set(),
+  wrongs:0, hintUsed:false, usedWords:new Set()
+};
+
+// ===== WELCOME =====
+function setPlayers(n) {
+  G.numPlayers = n;
+  document.querySelectorAll('.count-btn').forEach((b,i) => b.classList.toggle('active', i+1===n));
+  const icons = ['🔴','🔵','🟢'], cls = ['p1','p2','p3'];
+  const c = document.getElementById('playerInputs');
+  c.innerHTML = '';
+  for (let i=0; i<n; i++) {
+    c.innerHTML += '<div class="player-input-wrap"><div class="player-icon '+cls[i]+'">'+icons[i]+'</div>'
+      +'<input class="input-field" id="p'+(i+1)+'name" type="text" placeholder="Nom du joueur '+(i+1)+'" maxlength="15"></div>';
+  }
+}
+
+function changeRounds(d) {
+  G.roundsPerPlayer = Math.max(1, Math.min(10, G.roundsPerPlayer+d));
+  document.getElementById('roundsVal').textContent = G.roundsPerPlayer;
+}
+
+function startGame() {
+  G.names = [];
+  for (let i=0; i<G.numPlayers; i++) {
+    const v = document.getElementById('p'+(i+1)+'name').value.trim();
+    G.names.push(v || 'Joueur '+(i+1));
+  }
+  G.scores = new Array(G.numPlayers).fill(0);
+  G.roundsPlayed = new Array(G.numPlayers).fill(0);
+  G.currentPlayer = 0;
+  G.usedWords = new Set();
+  buildKeyboard();
+  showScreen('game');
+  newTurn();
+}
+
+// ===== KEYBOARD =====
+const ROWS = ['ABCDEFGHIJ','KLMNOPQRSTU','VWXYZ'];
+function buildKeyboard() {
+  ROWS.forEach(function(row, ri) {
+    const el = document.getElementById('row'+(ri+1));
+    el.innerHTML = '';
+    for (let i=0; i<row.length; i++) {
+      const ch = row[i];
+      const btn = document.createElement('button');
+      btn.className = 'kb-key';
+      btn.textContent = ch;
+      btn.id = 'key-'+ch;
+      btn.onclick = (function(c){ return function(){ guess(c); }; })(ch);
+      el.appendChild(btn);
+    }
+  });
+}
+function resetKeyboard() {
+  document.querySelectorAll('.kb-key').forEach(function(b){ b.className='kb-key'; b.disabled=false; });
+}
+
+// ===== TURN =====
+function newTurn() {
+  // find a word
+  let avail = WORDS.filter(function(w){ return !G.usedWords.has(w.word); });
+  if (!avail.length) { G.usedWords.clear(); avail = WORDS.slice(); }
+  const pick = avail[Math.floor(Math.random()*avail.length)];
+  G.usedWords.add(pick.word);
+  G.word = pick.word;
+  G.def = pick.def;
+  G.guessed = new Set();
+  G.correct = new Set();
+  G.wrongs = 0;
+  G.hintUsed = false;
+
+  resetKeyboard();
+  renderScores();
+  renderTurnInfo();
+  document.getElementById('defText').textContent = G.def;
+  renderWord(false);
+  document.getElementById('mistakesVal').textContent = '0';
+  document.getElementById('btnAide').disabled = false;
+}
+
+function renderScores() {
+  const bar = document.getElementById('scoresBar');
+  bar.innerHTML = '';
+  G.names.forEach(function(name, i) {
+    const d = document.createElement('div');
+    d.className = 'score-card' + (i===G.currentPlayer ? ' active-player' : '');
+    d.innerHTML = '<div class="score-name">'+name+'</div>'
+      +'<div class="score-val">'+G.scores[i]+'</div>'
+      +(i===G.currentPlayer ? '<div class="active-badge">▶ Tour</div>' : '');
+    bar.appendChild(d);
+  });
+}
+
+function renderTurnInfo() {
+  const rnd = G.roundsPlayed[G.currentPlayer]+1;
+  document.getElementById('turnInfo').innerHTML =
+    '<span>'+G.names[G.currentPlayer]+'</span> · Mot '+rnd+'/'+G.roundsPerPlayer;
+}
+
+function renderWord(revealAll) {
+  const c = document.getElementById('wordDisplay');
+  c.innerHTML = '';
+  for (let i=0; i<G.word.length; i++) {
+    const ch = G.word[i];
+    const box = document.createElement('div');
+    box.className = 'letter-box';
+    if (G.correct.has(ch)) {
+      box.textContent = ch;
+      box.classList.add('revealed');
+    } else if (revealAll) {
+      box.textContent = ch;
+      box.classList.add('wrong-reveal');
+    }
+    c.appendChild(box);
+  }
+}
+
+// ===== GUESS =====
+function guess(letter) {
+  if (G.guessed.has(letter)) return;
+  G.guessed.add(letter);
+  const btn = document.getElementById('key-'+letter);
+  if (G.word.indexOf(letter) >= 0) {
+    G.correct.add(letter);
+    if (btn) { btn.className='kb-key correct'; btn.disabled=true; }
+    renderWord(false);
+    // check win
+    let won = true;
+    for (let i=0; i<G.word.length; i++) { if (!G.correct.has(G.word[i])) { won=false; break; } }
+    if (won) endTurn(true);
+  } else {
+    G.wrongs++;
+    if (btn) { btn.className='kb-key wrong'; btn.disabled=true; }
+    document.getElementById('mistakesVal').textContent = G.wrongs;
+  }
+}
+
+function useHint() {
+  if (G.hintUsed) return;
+  const unrevealed = [];
+  for (let i=0; i<G.word.length; i++) { if (!G.correct.has(G.word[i]) && unrevealed.indexOf(G.word[i])<0) unrevealed.push(G.word[i]); }
+  if (!unrevealed.length) return;
+  G.hintUsed = true;
+  document.getElementById('btnAide').disabled = true;
+  const ch = unrevealed[Math.floor(Math.random()*unrevealed.length)];
+  G.correct.add(ch);
+  G.guessed.add(ch);
+  const btn = document.getElementById('key-'+ch);
+  if (btn) { btn.className='kb-key correct'; btn.disabled=true; }
+  // update display with hint style
+  const boxes = document.getElementById('wordDisplay').querySelectorAll('.letter-box');
+  for (let i=0; i<G.word.length; i++) {
+    if (G.word[i]===ch) { boxes[i].textContent=ch; boxes[i].classList.add('hint-revealed'); }
+  }
+  G.scores[G.currentPlayer] -= 1;
+  renderScores();
+  showToast('💡 Lettre révélée : '+ch+' (−1 point)');
+  let won = true;
+  for (let i=0; i<G.word.length; i++) { if (!G.correct.has(G.word[i])) { won=false; break; } }
+  if (won) endTurn(true);
+}
+
+// ===== END TURN =====
+function endTurn(won) {
+  let pts = 0;
+  if (won) {
+    pts = Math.max(0, 10 - G.wrongs);
+    G.scores[G.currentPlayer] += pts;
+  } else {
+    renderWord(true);
+  }
+  G.roundsPlayed[G.currentPlayer]++;
+  renderScores();
+
+  document.getElementById('resEmoji').textContent = won ? (G.wrongs===0 ? '🎉' : '😊') : '😢';
+  document.getElementById('resTitle').textContent = won ? (G.wrongs===0 ? 'Parfait !' : 'Bravo !') : 'Raté !';
+
+  let ptsHtml = '';
+  if (won) {
+    ptsHtml = pts > 0
+      ? '<span class="points-pos">+'+pts+' point'+(pts>1?'s':'')+' 🌟</span>'
+      : '<span class="points-zero">0 point (−'+G.wrongs+' erreurs)</span>';
+  } else {
+    ptsHtml = '<span class="points-zero">0 point cette fois</span>';
+  }
+  document.getElementById('resPoints').innerHTML = ptsHtml;
+
+  const allDone = G.roundsPlayed.every(function(r,i){ return r>=G.roundsPerPlayer; });
+  document.getElementById('btnNext').textContent = allDone ? 'Voir les résultats 🏆' : 'Joueur suivant →';
+
+  // Show overlay first, THEN paint the word so it's never missed
+  const overlay = document.getElementById('overlay');
+  overlay.classList.add('show');
+
+  var wordToShow = G.word;
+  var clsToUse = won ? 'res-won' : 'res-lost';
+  requestAnimationFrame(function() {
+    var wordDiv = document.getElementById('resWordDisplay');
+    wordDiv.innerHTML = '';
+    for (var i=0; i<wordToShow.length; i++) {
+      var box = document.createElement('div');
+      box.className = 'res-letter-box ' + clsToUse;
+      box.textContent = wordToShow[i];
+      wordDiv.appendChild(box);
+    }
+  });
+}
+
+function nextTurn() {
+  // Freeze the overlay content before hiding, so the word stays visible during transition
+  const allDone = G.roundsPlayed.every(function(r){ return r>=G.roundsPerPlayer; });
+  const overlay = document.getElementById('overlay');
+  overlay.classList.remove('show');
+  // Small delay so browser paints the hide before we mutate game state
+  setTimeout(function() {
+    if (allDone) { endGame(); return; }
+    let next = (G.currentPlayer+1) % G.numPlayers;
+    while (G.roundsPlayed[next] >= G.roundsPerPlayer) next = (next+1) % G.numPlayers;
+    G.currentPlayer = next;
+    newTurn();
+  }, 50);
+}
+
+// ===== END GAME =====
+function endGame() {
+  showScreen('end');
+  const ranked = G.names.map(function(n,i){ return {name:n, score:G.scores[i]}; })
+    .sort(function(a,b){ return b.score-a.score; });
+  const medals = ['🥇','🥈','🥉'];
+  document.getElementById('podium').innerHTML = ranked.map(function(p,i){
+    return '<div class="podium-item"><div class="podium-rank">'+(medals[i]||i+1)+'</div>'
+      +'<div class="podium-name">'+p.name+'</div>'
+      +'<div><div class="podium-score">'+p.score+'</div><div class="podium-pts">points</div></div></div>';
+  }).join('');
+}
+
+function resetGame() { showScreen('welcome'); }
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById(id).classList.add('active');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 2500);
+}
+
+document.addEventListener('keydown', function(e) {
+  const k = e.key.toUpperCase();
+  if (/^[A-Z]$/.test(k) && document.getElementById('game').classList.contains('active')
+      && !document.getElementById('overlay').classList.contains('show')) {
+    guess(k);
+  }
+});
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
+</script>
+</body>
+</html>
